@@ -1,0 +1,169 @@
+import pytest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+
+
+@pytest.fixture(scope="module")
+def setup():
+    driver = webdriver.Chrome()  # Use the appropriate WebDriver for your browser
+    driver.maximize_window()
+    driver.get("http://automationexercise.com")
+    yield driver
+    driver.quit()
+
+
+#Function to launch browser
+def test_launch_browser(setup):
+    assert "Automation Exercise" in setup.title
+
+
+#Test to verify if Homepage is displayed properly
+def test_verify_home_page(setup):
+    homepage_element = setup.find_element(By.XPATH, "//a[normalize-space()='Home']")
+    # homepage_element = setup.find_element(By.XPATH, "//a[contains(text(),'Home')]")
+    assert homepage_element.is_displayed()
+
+
+# Test to add products to cart
+def test_add_products_to_cart(setup):
+    setup.find_element(By.XPATH, "//a[contains(text(),'Products')]").click()
+    WebDriverWait(setup, 10).until(EC.visibility_of_element_located((By.XPATH, "//div[@class='features_items']")))
+
+    products = setup.find_elements(By.XPATH,
+                                   "//div[@class='features_items']//div[@class='productinfo text-center']//a[@class='btn btn-default add-to-cart']")
+    # Add first 3 products to cart
+    for product in products[:3]:
+        ActionChains(setup).move_to_element(product).click().perform()
+        WebDriverWait(setup, 10).until(
+            EC.visibility_of_element_located((By.XPATH, "//button[contains(text(),'Continue Shopping')]"))).click()
+
+
+#Test to view the cart page
+def test_view_cart(setup):
+    setup.find_element(By.XPATH, "//a[contains(text(),'Cart')]").click()
+    cart_page = setup.find_element(By.XPATH, "//section[@id='cart_items']")
+    assert cart_page.is_displayed()
+
+
+#To proceed to checkout
+def test_proceed_to_checkout(setup):
+    setup.find_element(By.XPATH, "//a[contains(text(),'Proceed To Checkout')]").click()
+
+
+#To test the register/login flow
+def test_register_login(setup):
+    setup.find_element(By.XPATH, "//u[contains(text(),'Register / Login')]").click()
+    WebDriverWait(setup, 10).until(EC.visibility_of_element_located((By.NAME, "name")))
+
+    setup.find_element(By.NAME, "name").send_keys("BaluMV")
+    setup.find_element(By.NAME, "email").send_keys("Balumv10@example.com")
+    setup.find_element(By.XPATH, "//button[contains(text(),'Signup')]").click()
+
+
+#To test the sign up details filling flow
+def test_fill_signup_details(setup):
+    WebDriverWait(setup, 10).until(EC.visibility_of_element_located((By.ID, "id_gender1"))).click()
+    setup.find_element(By.NAME, "password").send_keys("password123")
+    setup.find_element(By.NAME, "days").send_keys("1")
+    setup.find_element(By.NAME, "months").send_keys("February")
+    setup.find_element(By.NAME, "years").send_keys("1995")
+    setup.find_element(By.NAME, "newsletter").click()
+    setup.find_element(By.NAME, "optin").click()
+    setup.find_element(By.NAME, "first_name").send_keys("Balu")
+    setup.find_element(By.NAME, "last_name").send_keys("MV")
+    setup.find_element(By.NAME, "company").send_keys("Moolya")
+    setup.find_element(By.NAME, "address1").send_keys("123 Street")
+    setup.find_element(By.NAME, "address2").send_keys("Suite 100")
+    setup.find_element(By.NAME, "country").send_keys("India")
+    setup.find_element(By.NAME, "state").send_keys("Karnataka")
+    setup.find_element(By.NAME, "city").send_keys("Bangalore")
+    setup.find_element(By.NAME, "zipcode").send_keys("560034")
+    setup.find_element(By.NAME, "mobile_number").send_keys("1234567890")
+    setup.find_element(By.XPATH, "//button[contains(text(),'Create Account')]").click()
+
+
+#To verify if the account is created or not
+def test_verify_account_created(setup):
+    message = WebDriverWait(setup, 10).until(
+        EC.visibility_of_element_located((By.XPATH, "//b[contains(text(),'Account Created!')]")))
+    assert message.is_displayed()
+    setup.find_element(By.XPATH, "//a[contains(text(),'Continue')]").click()
+
+
+#Verify 'Logged in as username' at Top
+def test_verify_logged_in_as_username(setup):
+    username_display = WebDriverWait(setup, 10).until(
+        EC.visibility_of_element_located((By.XPATH, "//a[contains(text(),'Logged in as')]")))
+    assert "Logged in as" in username_display.text
+
+
+#Verify cart again
+def test_view_cart_again(setup):
+    setup.find_element(By.XPATH, "//a[contains(text(),'Cart')]").click()
+
+
+#Verify proceed to checkout again
+def test_proceed_to_checkout_again(setup):
+    setup.find_element(By.XPATH, "//a[contains(text(),'Proceed To Checkout')]").click()
+
+
+#Verify Address Details and Review Your Order
+def test_verify_address_and_review_order(setup):
+    address_details = WebDriverWait(setup, 10).until(
+        EC.visibility_of_element_located((By.XPATH, "//ul[@id='address_delivery']")))
+    assert address_details.is_displayed()
+
+
+#Enter Description in Comment Text Area and Click 'Place Order'
+def test_place_order(setup):
+    setup.find_element(By.NAME, "message").send_keys("This is a test order.")
+    setup.find_element(By.XPATH, "//a[contains(text(),'Place Order')]").click()
+
+
+#To enter payment details and confirm the order
+def test_enter_payment_details(setup):
+    WebDriverWait(setup, 10).until(EC.visibility_of_element_located((By.NAME, "name_on_card"))).send_keys("BaluMV")
+    setup.find_element(By.NAME, "card_number").send_keys("1111222233334444")
+    setup.find_element(By.NAME, "cvc").send_keys("123")
+    setup.find_element(By.NAME, "expiry_month").send_keys("12")
+    setup.find_element(By.NAME, "expiry_year").send_keys("2025")
+    setup.find_element(By.XPATH, "//button[contains(text(),'Pay and Confirm Order')]").click()
+
+
+#Verify Success Message
+def test_verify_success_message(setup):
+    success_message = WebDriverWait(setup, 10).until(
+        EC.visibility_of_element_located((By.XPATH, "//b[contains(text(),'Order Placed!')]")))
+    assert success_message.is_displayed()
+
+
+#To download invoice
+def test_download_invoice(setup):
+    setup.find_element(By.XPATH, "//a[contains(text(),'Download Invoice')]").click()
+
+
+#Click delete account
+def test_delete_account(setup):
+    # Assume the user is already logged in at this point
+    # Click 'Delete Account' button
+    delete_account_button = WebDriverWait(setup, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//a[contains(text(),'Delete Account')]"))
+    )
+    delete_account_button.click()
+
+    # Verify 'ACCOUNT DELETED!' message is displayed
+    account_deleted_message = WebDriverWait(setup, 10).until(
+        EC.visibility_of_element_located((By.XPATH, "//b[contains(text(),'Account Deleted!')]"))
+    )
+    assert account_deleted_message.is_displayed()
+
+    # Click the 'Continue' button
+    continue_button = WebDriverWait(setup, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//a[contains(text(),'Continue')]"))
+    )
+    continue_button.click()
+
